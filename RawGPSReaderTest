@@ -1,0 +1,14 @@
+#include <SoftwareSerial.h>
+SoftwareSerial gpsSerial(D7, D6);
+
+void setup() {
+  Serial.begin(115200);
+  gpsSerial.begin(9600);  // Try 4800, 38400, 115200 if needed
+  Serial.println("Waiting for GPS data...");
+}
+
+void loop() {
+  while (gpsSerial.available()) {
+    Serial.write(gpsSerial.read());  // Show raw GPS output
+  }
+}
