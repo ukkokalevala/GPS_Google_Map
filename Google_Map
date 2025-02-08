@@ -1,0 +1,61 @@
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+const char* ssid = "yourSSID";  // Change to your Wi-Fi
+const char* password = "yourPASSWORD";
+
+SoftwareSerial gpsSerial(D7, D6);  // RX, TX (Software Serial for GPS)
+TinyGPSPlus gps;
+ESP8266WebServer server(80);
+
+String latitude = "0";
+String longitude = "0";
+
+void handleRoot() {
+  String html = "<html><body>";
+  html += "<h2>GPS Tracker</h2>";
+  html += "<p>Latitude: " + latitude + "</p>";
+  html += "<p>Longitude: " + longitude + "</p>";
+  html += "<iframe width='600' height='450' ";
+  html += "src='https://www.google.com/maps?q=" + latitude + "," + longitude + "&output=embed'></iframe>";
+  html += "</body></html>";
+  
+  server.send(200, "text/html", html);
+}
+
+void setup() {
+  Serial.begin(115200);
+  gpsSerial.begin(9600);
+  
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected to WiFi!");
+  Serial.println("Local IP: " + WiFi.localIP().toString());
+
+  server.on("/", handleRoot);
+  server.begin();
+}
+
+void loop() {
+  while (gpsSerial.available() > 0) {
+    gps.encode(gpsSerial.read());
+    
+    if (gps.location.isUpdated()) {
+      latitude = String(gps.location.lat(), 6);
+      longitude = String(gps.location.lng(), 6);
+      
+      Serial.print("Latitude: "); Serial.println(latitude);
+      Serial.print("Longitude: "); Serial.println(longitude);
+    }
+  }
+  
+  server.handleClient();
+}
